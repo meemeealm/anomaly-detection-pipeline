@@ -1,0 +1,29 @@
+# Virtual environments
+.venv/
+venv/
+# Python caches / build output
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+# Generated models (keep the directory via .gitkeep)
+artifacts/*
+!artifacts/.gitkeep
+*.onnx
+*.lgbm.txt
+# Benchmark / load-test output
+results/*
+!results/.gitkeep
+locust_*.csv
+# Logs and OS files
+*.log
+.DS_Store
+# Local env files
+.env
+*.bak
+artifacts/*.joblib
+*.sh

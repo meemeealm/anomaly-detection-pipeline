@@ -1,0 +1,9 @@
+{
+  "model_name": "iot-anomaly-lgbm",
+  "input_name": "input",
+  "feature_names": ["temperature", "vibration", "pressure", "humidity", "current", "rpm"],
+  "threshold": 0.5,
+  "onnx_path": "artifacts/model.onnx",
+  "lightgbm_path": "artifacts/model.lgbm.txt",
+  "onnx_intra_op_threads": 1
+}

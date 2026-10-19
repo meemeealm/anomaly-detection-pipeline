@@ -1,0 +1,6 @@
+# Real-time practice layer (simulator, MQTT client, dashboard).
+# Kept separate so the serving image stays minimal.
+-r requirements.txt
+faker>=24.0
+paho-mqtt>=2.0,<3.0
+streamlit>=1.37,<2.0

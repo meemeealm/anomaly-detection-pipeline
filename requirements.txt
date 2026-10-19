@@ -1,0 +1,5 @@
+# Serving (runtime) dependencies only.
+fastapi>=0.115,<1.0
+uvicorn>=0.30,<1.0
+numpy>=1.26,<3.0
+onnxruntime>=1.18,<2.0

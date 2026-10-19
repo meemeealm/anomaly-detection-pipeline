@@ -1,0 +1,11 @@
+# Development / training / benchmarking dependencies.
+-r requirements.txt
+lightgbm>=4.3,<5.0
+onnxmltools>=1.12,<2.0
+onnx>=1.16,<2.0
+scikit-learn>=1.4,<2.0
+pytest>=8.0,<10.0
+httpx>=0.27,<1.0
+psutil>=5.9,<8.0
+locust>=2.29,<3.0
+skl2onnx>=1.16,<2.0
