@@ -65,6 +65,7 @@ Run the stream with the windowed model:
   streamlit run scripts/dashboard.py
 
 
+& "C:\Program Files\GrafanaLabs\grafana\bin\grafana.exe" server
 
 
 

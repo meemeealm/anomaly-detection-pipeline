@@ -1,4 +1,4 @@
-"""window-aware, flatline-aware, config-aware: MQTT consumer.
+"""window-aware, flatline-aware, config-aware, metrics-aware: MQTT consumer.
 
 validate -> (sliding-window features) -> ONNX score -> SQLite
 
@@ -7,6 +7,7 @@ validate -> (sliding-window features) -> ONNX score -> SQLite
   (malformed, non_finite_value, out_of_order, gap_reset, scoring_error); queue
   overflow and warm-up skips are counted in the run summary.
 * Ctrl+C drains the queue before exiting.
+* Prometheus metrics are served on --metrics-port (default 8001, 0 = off) at /metrics.
 * Settings resolve in this order: command-line flag > environment (IOT_<NAME>) >
   configs/stream.json > built-in default. The effective value and its source are logged at
   startup and stored in runs.config. Model-produced values (threshold, window size) come from
@@ -35,6 +36,7 @@ from iot_anomaly import storage  # noqa: E402
 from iot_anomaly.features import StreamFeaturizer  # noqa: E402
 from iot_anomaly.inference import AnomalyDetector  # noqa: E402
 from iot_anomaly.logging_setup import new_run_id, setup_logging  # noqa: E402
+from iot_anomaly.metrics import make_metrics  # noqa: E402
 from iot_anomaly.rules import alert_reason, flatline_sensors  # noqa: E402
 from iot_anomaly.runtime_config import (  # noqa: E402
     CONSUMER_SETTINGS, format_settings, model_sources, resolve_all)
@@ -57,6 +59,8 @@ def parse_args() -> argparse.Namespace:
                     help="flatline rule: flag a sensor whose rolling std (z-units) is below this; 0 disables")
     ap.add_argument("--max-gap-s", type=float, default=None,
                     help="silence (seconds) after which a device's window restarts")
+    ap.add_argument("--metrics-host", default=None, help="bind address of the Prometheus endpoint")
+    ap.add_argument("--metrics-port", type=int, default=None, help="Prometheus endpoint port; 0 disables")
     ap.add_argument("--log-level", default=None)
     ap.add_argument("--config", default=None, help="stream config JSON (default configs/stream.json)")
     ap.add_argument("--run-id", default=None)
@@ -101,6 +105,20 @@ def main() -> int:
     q: queue.Queue = queue.Queue(maxsize=args.queue_size)
     counters = {k: 0 for k in ("processed", "dropped", "malformed", "non_finite", "out_of_order",
                                "gap_reset", "warmup", "scoring_error", "db_error", "flatline_flags")}
+
+    metrics = make_metrics() if args.metrics_port else None
+    if args.metrics_port and metrics is None:
+        log.warning("prometheus-client is not installed; metrics disabled (pip install prometheus-client)")
+    elif metrics is not None:
+        try:
+            metrics.start(args.metrics_host, args.metrics_port)
+            metrics.set_info(run_id, det.model_id, det.model_type, (window or {}).get("size"))
+            log.info("metrics endpoint up",
+                     extra={"url": f"http://{args.metrics_host}:{args.metrics_port}/metrics"})
+        except OSError as exc:   # e.g. port already in use: keep scoring, lose only the metrics
+            log.error("cannot start metrics endpoint; continuing without it",
+                      extra={"port": args.metrics_port, "error": str(exc)})
+            metrics = None
 
     def on_connect(client, userdata, flags, reason_code, properties=None):
         if reason_code.is_failure:
@@ -200,6 +218,8 @@ def main() -> int:
             if rows:
                 storage.insert_readings(conn, rows)
                 counters["processed"] += len(rows)
+                if metrics:
+                    metrics.observe_batch(rows)
             storage.record_failures(conn, failures)
         except sqlite3.Error:
             counters["db_error"] += len(rows) + len(failures)
@@ -253,6 +273,8 @@ def main() -> int:
                     break
             if batch:
                 process(batch)
+            if metrics:
+                metrics.sync(counters, q.qsize())
             now = time.monotonic()
             if now - last_report >= 5.0:
                 rate = (counters["processed"] - last_count) / (now - last_report)

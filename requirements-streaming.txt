@@ -4,3 +4,4 @@
 faker>=24.0
 paho-mqtt>=2.0,<3.0
 streamlit>=1.37,<2.0
+prometheus-client>=0.20,<1.0

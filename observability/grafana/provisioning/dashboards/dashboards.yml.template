@@ -1,0 +1,10 @@
+apiVersion: 1
+providers:
+  - name: iot
+    folder: IoT
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: "__DASHBOARD_DIR__"

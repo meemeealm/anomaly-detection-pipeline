@@ -1,4 +1,4 @@
-"""config-aware: layered runtime settings.
+"""config-aware, metrics-aware: layered runtime settings.
 
 Precedence, highest first:
     command-line flag  >  environment variable IOT_<NAME>  >  configs/stream.json  >  built-in default
@@ -29,6 +29,8 @@ DEFAULTS: dict = {
     "flat_eps": 0.02,
     "max_gap_s": 30.0,
     "log_level": "INFO",
+    "metrics_host": "127.0.0.1",
+    "metrics_port": 8001,   # 0 disables the Prometheus endpoint
 }
 CONSUMER_SETTINGS = tuple(DEFAULTS)
 PUBLISHER_SETTINGS = ("host", "port", "qos", "log_level")
@@ -80,6 +82,7 @@ _CHECKS = {
     "flat_eps": lambda v: v >= 0,
     "max_gap_s": lambda v: v > 0,
     "log_level": lambda v: str(v).upper() in _LOG_LEVELS,
+    "metrics_port": lambda v: 0 <= v <= 65535,
 }
 
 

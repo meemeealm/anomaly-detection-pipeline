@@ -1,0 +1,32 @@
+# Evaluated by Prometheus and shown on its Alerts page (no Alertmanager, so nothing is sent anywhere).
+groups:
+  - name: iot-pipeline
+    rules:
+      - alert: ConsumerDown
+        expr: up{job="iot-consumer"} == 0
+        for: 30s
+        labels: {severity: critical}
+        annotations: {summary: "Consumer metrics endpoint is not reachable"}
+
+      - alert: NoScoredData
+        expr: (time() - iot_last_scored_timestamp_seconds > 60) and (iot_last_scored_timestamp_seconds > 0)
+        for: 1m
+        labels: {severity: warning}
+        annotations: {summary: "Nothing has been scored for over a minute"}
+
+      - alert: MessagesDropped
+        expr: increase(iot_messages_total{outcome="dropped"}[1m]) > 0
+        labels: {severity: warning}
+        annotations: {summary: "Consumer queue overflowed; messages were dropped"}
+
+      - alert: HighE2ELatencyP95
+        expr: histogram_quantile(0.95, sum(rate(iot_e2e_latency_seconds_bucket[1m])) by (le)) > 0.5
+        for: 2m
+        labels: {severity: warning}
+        annotations: {summary: "p95 end-to-end latency above 500 ms"}
+
+      - alert: HighFailedEventRatio
+        expr: sum(rate(iot_messages_total{outcome=~"malformed|non_finite|out_of_order|gap_reset|scoring_error|db_error"}[2m])) / sum(rate(iot_messages_total{outcome!="warmup"}[2m])) > 0.05
+        for: 2m
+        labels: {severity: warning}
+        annotations: {summary: "More than 5% of messages are failing (see failed_events table)"}

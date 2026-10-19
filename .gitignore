@@ -27,3 +27,4 @@ locust_*.csv
 *.bak
 artifacts/*.joblib
 *.sh
+observability/grafana/provisioning/dashboards/dashboards.yml
