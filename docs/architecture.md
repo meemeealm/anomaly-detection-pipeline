@@ -9,4 +9,4 @@ online:   HTTP -> FastAPI (api.py) -> ONNX Runtime CPU (inference.py) -> score +
 - The model is loaded once at app startup; `/health` reports `model_loaded`.
 - Feature order and threshold live in `configs/model.json`.
 
-_TODO: document design decisions, thread settings, and failure modes._
+

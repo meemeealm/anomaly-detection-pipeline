@@ -1,4 +1,4 @@
-# Real-time streaming practice
+# Real-time streaming 
 
 ```
 simulate_publisher.py --MQTT--> broker (mosquitto) --MQTT--> consume_score.py

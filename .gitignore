@@ -28,3 +28,6 @@ locust_*.csv
 artifacts/*.joblib
 *.sh
 observability/grafana/provisioning/dashboards/dashboards.yml
+results/training/
+results/mlflow/
+data/skab/
