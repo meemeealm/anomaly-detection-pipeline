@@ -1,10 +1,10 @@
 # Anomaly Detection Pipeline 
 
-This repo is demonstration of IoT sensor data anomaly detection pipeline.
+This repo is demonstration of a real-time IoT monitoring system that simulates telemetry data using Faker and NumPy, streams it via MQTT, and processes it through a sliding-window consumer. It applies both rule-based checks (flatline detection) and machine learning models (ONNX Isolation Forest) to detect anomalies, storing results and exposing metrics for live monitoring via Prometheus and Grafana.
 
 ![Anomaly Detection Pipeline Diagram](https://github.com/meemeealm/anomaly-detection-pipeline/raw/main/docs/imgs/mermaid_diagram.png)
 
-## Setup with uv
+## Setup 
 
 from root -
 
