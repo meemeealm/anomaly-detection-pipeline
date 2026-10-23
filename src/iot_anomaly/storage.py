@@ -10,6 +10,8 @@ import sqlite3
 import time
 from pathlib import Path
 
+from iot_anomaly.db_retry import retry_locked
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS devices (
     device_id  TEXT PRIMARY KEY,
@@ -117,26 +119,46 @@ def insert_scores(conn: sqlite3.Connection, rows: list[tuple]) -> None:
         conn.executemany(_LEGACY_INSERT, rows)
 
 
+
 def insert_readings(conn: sqlite3.Connection, rows: list[dict]) -> None:
-    sql = (f"INSERT INTO readings ({','.join(_READING_COLS)}) "
-           f"VALUES ({','.join(':' + c for c in _READING_COLS)})")
-    with conn:
-        conn.executemany(sql, [{c: r.get(c) for c in _READING_COLS} for r in rows])
+    """Insert scored readings, retrying transient SQLite lock errors."""
+    if not rows:
+        return
+
+    sql = (
+        f"INSERT INTO readings ({','.join(_READING_COLS)}) "
+        f"VALUES ({','.join(':' + c for c in _READING_COLS)})"
+    )
+    cleaned = [{c: r.get(c) for c in _READING_COLS} for r in rows]
+
+    def operation() -> None:
+        with conn:
+            conn.executemany(sql, cleaned)
+
+    retry_locked(operation)
 
 
 def record_failures(conn: sqlite3.Connection, rows: list[dict]) -> None:
+    """Insert failed events, retrying transient SQLite lock errors."""
     if not rows:
         return
-    sql = (f"INSERT INTO failed_events ({','.join(_FAILURE_COLS)}) "
-           f"VALUES ({','.join(':' + c for c in _FAILURE_COLS)})")
+
+    sql = (
+        f"INSERT INTO failed_events ({','.join(_FAILURE_COLS)}) "
+        f"VALUES ({','.join(':' + c for c in _FAILURE_COLS)})"
+    )
     cleaned = []
     for r in rows:
-        r = {c: r.get(c) for c in _FAILURE_COLS}
-        if r["payload"] is not None:
-            r["payload"] = str(r["payload"])[:1000]
-        cleaned.append(r)
-    with conn:
-        conn.executemany(sql, cleaned)
+        item = {c: r.get(c) for c in _FAILURE_COLS}
+        if item["payload"] is not None:
+            item["payload"] = str(item["payload"])[:1000]
+        cleaned.append(item)
+
+    def operation() -> None:
+        with conn:
+            conn.executemany(sql, cleaned)
+
+    retry_locked(operation)
 
 
 # ------------------------------------------------------------------- runs ----
